@@ -1,5 +1,5 @@
 # auminal
-#### 🎶 Terminal audio player with responsive UI
+** 🎶 Terminal audio player with responsive UI**
 
 ## Features
 - Play audio files from a specified directory
