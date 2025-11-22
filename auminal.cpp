@@ -1,3 +1,7 @@
+// auminal - Terminal audio player with responsive ui
+
+#define VERSION "1.0.0"
+
 #include <SFML/System/Time.hpp>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
@@ -214,12 +218,20 @@ int main(int argc, char *argv[]) {
 				return 1;
 			}
 		}
+		else if (std::string(argv[1]) == "--version" || std::string(argv[1]) == "-v") {
+			std::cout << "auminal " << VERSION << "\n";
+			std::cout << "\nSupport the project by starring the repository on GitHub!\n";
+			std::cout << "https://github.com/ItsCR24/auminal\n";
+			return 1;
+		}
+		else
 		if (std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h") {
 			std::cout << "auminal - Terminal audio player with responsive ui\n\n";
 			std::cout << "Usage: auminal [option]\n";
 			std::cout << "Options:\n";
-			std::cout << "\t--directory, -d <path> \tSpecify the audio library directory path\n";
+			std::cout << "\t--directory, -d <path> \tSpecify the audio library path\n";
 			std::cout << "\t--help, -h \t\tShow this help message\n";
+			std::cout << "\t--version, -v \tShow version number\n";
 			std::cout << "\nConfig file is stored at:\n";
 			std::cout << configPath << "\n";
 			return 1;
