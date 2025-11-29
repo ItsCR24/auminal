@@ -1,6 +1,8 @@
 [![auminal typing logo](https://readme-typing-svg.demolab.com?font=Google+Sans+Code&size=60&duration=3750&pause=5000&color=73D99D&center=true&vCenter=true&random=true&width=435&height=80&lines=%3E+aumimal)](https://git.io/typing-svg)
 
+<center>
 __🎶 Terminal audio player with responsive UI__
+</center>
 
 ## Features
 - Play audio files from a specified directory
