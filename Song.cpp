@@ -1,6 +1,5 @@
 #include "Song.h"
 #include <SFML/System/Time.hpp>
-#include <sys/stat.h>
 
 Song::Song() {
 	title = "Unknown";
@@ -50,6 +49,10 @@ void Song::setLoop(bool loop) {
 
 void Song::setPlayingOffset(sf::Time offset) {
 	audio.setPlayingOffset(offset);
+}
+
+float Song::getPlayingOffset() const {
+    return audio.getPlayingOffset().asSeconds();
 }
 
 void Song::setFilePath(const std::wstring& path) {

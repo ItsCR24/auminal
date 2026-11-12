@@ -180,6 +180,47 @@ float currentSongDuration(int currentlyPlaying, std::vector<std::unique_ptr<Song
 	}
 }
 
+std::string toLower(std::string value) {
+	for (char& c : value) {
+		if (c >= 'A' && c <= 'Z') {
+			c += 'a' - 'A';
+		}
+	}
+	return value;
+}
+
+std::string formatTime(float seconds) {
+    int totalSeconds = static_cast<int>(seconds);
+
+    if (totalSeconds < 0)
+        totalSeconds = 0;
+
+    int hours = totalSeconds / 3600;
+    int minutes = (totalSeconds / 60) % 60;
+    int remainingSeconds = totalSeconds % 60;
+
+    std::string result;
+
+    if (hours > 0) {
+        result += std::to_string(hours) + ":";
+
+        if (minutes < 10)
+            result += "0";
+    }
+    else {
+        minutes = totalSeconds / 60;
+    }
+
+    result += std::to_string(minutes) + ":";
+
+    if (remainingSeconds < 10)
+        result += "0";
+
+    result += std::to_string(remainingSeconds);
+
+    return result;
+}
+
 int main(int argc, char *argv[]) {
 
 	ScreenInteractive screen = ScreenInteractive::Fullscreen();
@@ -201,6 +242,8 @@ int main(int argc, char *argv[]) {
 	std::vector<ListEntry> files;
 	std::vector<std::string> listTitles;
 	std::vector<std::unique_ptr<Song>> songs;
+
+	std::string query;
 
 	if (argc > 1) {
 		if (std::string(argv[1]) == "--directory" || std::string(argv[1]) == "-d") {
@@ -373,21 +416,116 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	// Search results
+	std::vector<std::string> filteredTitles;
+	std::vector<int> filteredIndices;
+
+	std::string lastQuery;
+	bool searchInitialized = false;
+
+	// Update search results whenever the query changes
+	auto updateSearchResults = [&]() {
+
+		// If the search has already been initialized and the query hasn't changed, skip updating
+		if (searchInitialized && query == lastQuery) return;
+
+		searchInitialized = true;
+		lastQuery = query;
+
+		filteredTitles.clear();
+		filteredIndices.clear();
+
+		// Reset selection after searching
+		selected = 0;
+
+		std::string searchQuery = toLower(query);
+
+		for (int i = 0; i < static_cast<int>(listTitles.size()); i++) {
+			std::string title = toLower(listTitles[i]);
+
+			// Empty query shows every song
+			// Otherwise, check whether the title contains the query.
+			if (searchQuery.empty() ||
+				title.find(searchQuery) != std::string::npos) {
+
+				filteredTitles.push_back(listTitles[i]);
+
+				// Save original song index
+				filteredIndices.push_back(i);
+			}
+		}
+	};
+
+	// Get the original song index of the selected search result.
+	auto selectedSongIndex = [&]() -> int {
+
+		if (selected < 0 ||
+			selected >= static_cast<int>(filteredIndices.size())) {
+			return -1;
+		}
+
+		return filteredIndices[selected];
+	};
+
 	// Components
-	Component menu = Menu(&listTitles, &selected);
+	Component menuList = Menu(&filteredTitles, &selected);
+
+	InputOption queryOpts;
+	Component search = Input(&query, "Search", queryOpts);
+
+	Component menu = Container::Vertical({search, menuList});
 
 	Component songsList = Renderer(menu, [&] {
+
+		// Update the filtered list BEFORE rendering the menu!
+		updateSearchResults();
+
+		Element songList;
+
+		if (filteredTitles.empty()) {
+			songList = text("No matching songs") | center | dim;
+		}
+		else {
+			songList = menuList->Render() | yframe;
+		}
+
 		return vbox({
-			text("auminal") | bold | center,
+			search->Render(),
 			separator(),
-			menu->Render() | yframe,
+			songList,
 		}) | border | xflex_grow | yflex_grow;
 	});
 
-	Component playButtonDetails = minimalButton(playIconDetails, [&]() { playSelected(selected, playing, playIcon, songs, currentlyPlaying, songPlaybackDuration); });
+	Component playButtonDetails = minimalButton(playIconDetails, [&]() {
+
+		int songIndex = selectedSongIndex();
+
+		if (songIndex == -1)
+			return;
+
+		playSelected(
+			songIndex,
+			playing,
+			playIcon,
+			songs,
+			currentlyPlaying,
+			songPlaybackDuration
+		);
+	});
+
 
 	Component preview = Renderer(playButtonDetails, [&] {
-		if (songs[selected].get()->getStatus() == sf::SoundSource::Status::Playing) {
+
+		int songIndex = selectedSongIndex();
+
+		// No song selected / no search results
+		if (songIndex == -1) {
+			return vbox({
+				text("No matching songs") | center
+			}) | vcenter | center | xflex_grow | yflex_grow | border;
+		}
+
+		if (songs[songIndex]->getStatus() == sf::SoundSource::Status::Playing) {
 			playIconDetails = "";
 		}
 		else {
@@ -397,21 +535,21 @@ int main(int argc, char *argv[]) {
 		Element playElement = playButtonDetails->Render();
 
 		return vbox({
-			text(listTitles[selected]) | center,
+			text(listTitles[songIndex]) | center,
 			separator(),
 			filler(),
 			vbox({
-				showDetail(0, selected, songs) | center,
-				showDetail(1, selected, songs) | center,
-				showDetail(2, selected, songs) | center,
+				showDetail(0, songIndex, songs) | center,
+				showDetail(1, songIndex, songs) | center,
+				showDetail(2, songIndex, songs) | center,
 				separatorEmpty(),
-				showDetail(3, selected, songs) | center,
-				showDetail(4, selected, songs) | center,
-				showDetail(5, selected, songs) | center,
-				showDetail(6, selected, songs) | center,
+				showDetail(3, songIndex, songs) | center,
+				showDetail(4, songIndex, songs) | center,
+				showDetail(5, songIndex, songs) | center,
+				showDetail(6, songIndex, songs) | center,
 				separatorEmpty(),
-				showDetail(7, selected, songs) | center,
-				text(files[selected].path) | center,
+				showDetail(7, songIndex, songs) | center,
+				text(files[songIndex].path) | center,
 				separatorEmpty(),
 				playElement | center,
 			}) | vcenter | center,
@@ -429,42 +567,117 @@ int main(int argc, char *argv[]) {
 	leftSplitOpts.separator_func = [] { return separatorEmpty(); };
 
 
-	float progress = 0.f;
-	float currentSongPlaybackDuration = elapsed(songPlaybackDuration, currentlyPlaying).asSeconds();
-	float songDuration = currentSongDuration(currentlyPlaying, songs);
+	float currentSongPlaybackDuration = 0.f;
+	float songDuration = 0.f;
 
 	Component splits = ResizableSplit(leftSplitOpts);
 
 	Component playButton = minimalButton(playIcon, [&]() { playButtonCurrent(playing, playIcon, songs, currentlyPlaying, songPlaybackDuration); });
 
-	Component player = Renderer(playButton, [&] {
-		currentSongPlaybackDuration = elapsed(songPlaybackDuration, currentlyPlaying).asSeconds();
-		songDuration = currentSongDuration(currentlyPlaying, songs);
-		
-		progress = currentSongPlaybackDuration / songDuration;
 
-		if (currentSongPlaybackDuration > songDuration && songDuration != 0) {
-			// Song ended
+	// Seek slider
+	float seekPosition = 0.f;
+
+	SliderOption<float> seekOptions;
+
+	seekOptions.value = &seekPosition;
+	seekOptions.min = 0.f;
+	seekOptions.max = 1000.f;
+	seekOptions.increment = 1.f;
+
+	seekOptions.color_active = Color::CadetBlue;
+	seekOptions.color_inactive = Color::CadetBlue;
+
+	seekOptions.on_change = [&]() {
+
+		if (currentlyPlaying == -1)
+			return;
+
+		Song* song = songs[currentlyPlaying].get();
+
+		float duration = song->getDuration();
+
+		if (duration <= 0.f)
+			return;
+
+		float targetPosition = duration * (seekPosition / 1000.f);
+
+		// SFML cannot seek while stopped
+		// Start the song first if necessary
+		if (song->getStatus() == sf::SoundSource::Status::Stopped) {
+
+			song->play();
+
+			if (song->getStatus() != sf::SoundSource::Status::Playing)
+				return;
+
+			playing = true;
+			playIcon = "";
+
 			songPlaybackDuration.restart();
-			songPlaybackDuration.stop();
+		}
+
+		song->setPlayingOffset(sf::seconds(targetPosition));
+	};
+
+	Component seekSlider = Slider(seekOptions);
+
+	Component playerControls = Container::Vertical({
+		playButton,
+		seekSlider
+	});
+
+	Component player = Renderer(playerControls, [&] {
+
+		if (currentlyPlaying != -1) {
+			currentSongPlaybackDuration = songs[currentlyPlaying]->getPlayingOffset();
+			songDuration = songs[currentlyPlaying]->getDuration();
+		}
+		else {
+			currentSongPlaybackDuration = 0.f;
+			songDuration = 0.f;
+		}
+
+		// Update slider position
+		if (songDuration > 0.f) {
+
+			seekPosition =
+				(currentSongPlaybackDuration / songDuration) * 1000.f;
+
+			if (seekPosition < 0.f)
+				seekPosition = 0.f;
+
+			if (seekPosition > 1000.f)
+				seekPosition = 1000.f;
+
+		}
+		else {
+			seekPosition = 0.f;
 		}
 
 		return vbox({
-			nowPlaying(currentlyPlaying, songs, 1) | size(WIDTH, EQUAL, Terminal::Size().dimx * 30/100),
+			nowPlaying(currentlyPlaying, songs, 1)
+			| size(WIDTH, EQUAL, Terminal::Size().dimx * 30/100),
+
 			dbox({
 				hbox({
-					nowPlaying(currentlyPlaying, songs, 2) | size(WIDTH, EQUAL, Terminal::Size().dimx * 30/100),
+					nowPlaying(currentlyPlaying, songs, 2)
+					| size(WIDTH, EQUAL, Terminal::Size().dimx * 30/100),
 				}),
+
 				playButton->Render() | center,
 			}),
+
 			text(""),
+
 			hbox({
-				text(std::to_string(static_cast<int>(currentSongPlaybackDuration)) + " ") | vcenter,
-				gauge(progress) | bgcolor(Color::SpringGreen4) | color(Color::CadetBlue),
-				text(" " + std::to_string(static_cast<int>(songDuration))) | vcenter
+				text(formatTime(currentSongPlaybackDuration) + " ") | vcenter,
+				seekSlider->Render() | bgcolor(Color::SpringGreen4) | xflex_grow,
+				text(" " + formatTime(songDuration)) | vcenter
 			})
 		});
 	});
+
 
 	ResizableSplitOption btmSplitOpts;
 	btmSplitOpts.main = player;

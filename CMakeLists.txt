@@ -21,7 +21,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(ftxui)
 
-find_package(taglib CONFIG REQUIRED)
+find_package(TagLib CONFIG REQUIRED)
 
 add_executable(
 	auminal

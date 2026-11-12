@@ -34,6 +34,7 @@ public:
 	void setYear(int y);
 	int getYear() const;
 	float getDuration() const;
+	float getPlayingOffset() const;
 	~Song();
 
 private:
