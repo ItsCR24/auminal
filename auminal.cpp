@@ -1,6 +1,6 @@
 // auminal - Terminal audio player with responsive ui
 
-#define VERSION "1.0.0"
+#define VERSION "1.2.0"
 
 #include <SFML/System/Time.hpp>
 #include <ftxui/component/component.hpp>
@@ -239,6 +239,7 @@ int main(int argc, char *argv[]) {
 	std::filesystem::path configPath = getConfigPath() / "config.ini";
 
 	std::string path;
+	bool dirFromArg = false;
 	std::vector<ListEntry> files;
 	std::vector<std::string> listTitles;
 	std::vector<std::unique_ptr<Song>> songs;
@@ -250,6 +251,7 @@ int main(int argc, char *argv[]) {
 			if (argc > 2) {
 				if (fs::exists(argv[2]) && fs::is_directory(argv[2])) {
 					path = argv[2];
+					dirFromArg = true;
 				}
 				else {
 					std::cerr << "The provided path is not a valid directory." << std::endl;
@@ -263,7 +265,7 @@ int main(int argc, char *argv[]) {
 		}
 		else if (std::string(argv[1]) == "--version" || std::string(argv[1]) == "-v") {
 			std::cout << "auminal " << VERSION << "\n";
-			std::cout << "\nSupport the project by starring the repository on GitHub!\n";
+			std::cout << "\nSupport the project by starring the repository on GitHub! :)\n";
 			std::cout << "https://github.com/ItsCR24/auminal\n";
 			return 1;
 		}
@@ -287,79 +289,110 @@ int main(int argc, char *argv[]) {
 
 	std::string tempPath;
 
-	if (fopen_s(&configFile, configPath.string().c_str(), "r") != NULL) {
-		// Create default config
-		std::cout << "\nWelcome to auminal! :)\n";
-		std::cout << "Do you want to specify a custom audio library directory? (Y/n): ";
-		std::string response;
-		std::getline(std::cin, response);
-		if (response == "Y" || response == "y" || response.empty()) {
-			std::cout << "Please enter the full path to your audio library directory: ";
-			std::getline(std::cin, tempPath);
-			while (!fs::exists(tempPath) && !fs::is_directory(tempPath)) {
-				std::cout << "The provided path is not a valid directory. Please enter a valid path: ";
-				std::getline(std::cin, tempPath);
-			}
+	// Only load config when no directory argument was provided.
+	if (!dirFromArg) {
 
-			if ((fopen_s(&configFile, configPath.string().c_str(), "w")) != NULL) {
-				std::cerr << "Error: Could not open file 'config.ini' for writing.\n";
-				return -1;
-			}
+		if (fopen_s(&configFile, configPath.string().c_str(), "r") != 0) {
 
-			// Save to config file and set path
-			fprintf(configFile, "PATH=%s\n", tempPath.c_str());
-			path = tempPath;
-			fclose(configFile);
-		}
-		else {
-			// Enter temporary path for this session
-			std::cout << "Enter a temporary path for this session: ";
-			std::getline(std::cin, tempPath);
-			while (!fs::exists(tempPath) && !fs::is_directory(tempPath)) {
-				std::cout << "The provided path is not a valid directory. Please enter a valid path: ";
-				std::getline(std::cin, tempPath);
-			}
-			path = tempPath;
-		}
-	}
-	else {
-		char buffer[260];
-		fscanf_s(configFile, "PATH=%s\n", &buffer, 260);
-		tempPath = buffer;
-		fclose(configFile);
+			// No config file exists.
+			std::cout << "\nWelcome to auminal! :)\n";
+			std::cout << "Do you want to specify a custom audio library directory? (Y/n): ";
 
-		if (!fs::exists(tempPath) || !fs::is_directory(tempPath)) {
-			std::cerr << "The path specified in 'config.ini' is not a valid directory.\n";
-			std::cout << "Do you want to specify a different audio library directory? (y/N): ";
 			std::string response;
 			std::getline(std::cin, response);
-			if (response == "Y" || response == "y") {
+
+			if (response == "Y" || response == "y" || response.empty()) {
+
 				std::cout << "Please enter the full path to your audio library directory: ";
 				std::getline(std::cin, tempPath);
-				while (!fs::exists(tempPath) && !fs::is_directory(tempPath)) {
+
+				while (!fs::exists(tempPath) || !fs::is_directory(tempPath)) {
 					std::cout << "The provided path is not a valid directory. Please enter a valid path: ";
 					std::getline(std::cin, tempPath);
 				}
 
-				// Update config file
-				if ((fopen_s(&configFile, configPath.string().c_str(), "w")) != 0) {
+				// Create config file.
+				if (fopen_s(&configFile, configPath.string().c_str(), "w") != 0) {
 					std::cerr << "Error: Could not open file 'config.ini' for writing.\n";
 					return -1;
 				}
+
 				fprintf(configFile, "PATH=%s\n", tempPath.c_str());
-				path = tempPath;
 				fclose(configFile);
 			}
 			else {
-				std::cout << "\nExiting auminal. Please fix the 'config.ini' file to point to a valid directory.\n";
-				std::cout << "Your config is located at: " << configPath << "\n";
-				return -1;
+
+				// Temporary path for this session.
+				std::cout << "Enter a temporary path for this session: ";
+				std::getline(std::cin, tempPath);
+
+				while (!fs::exists(tempPath) || !fs::is_directory(tempPath)) {
+					std::cout << "The provided path is not a valid directory. Please enter a valid path: ";
+					std::getline(std::cin, tempPath);
+				}
 			}
+
+			path = tempPath;
 		}
 		else {
+
+			// Read existing config file.
+			char buffer[260] = {};
+
+			if (fscanf_s(configFile, "PATH=%259[^\n]", buffer, (unsigned)sizeof(buffer)) != 1) {
+				fclose(configFile);
+				std::cerr << "Error: Invalid config file.\n";
+				return -1;
+			}
+
+			tempPath = buffer;
+
+			// Remove Windows line ending if present.
+			if (!tempPath.empty() && tempPath.back() == '\r')
+				tempPath.pop_back();
+
+			fclose(configFile);
+
+			if (!fs::exists(tempPath) || !fs::is_directory(tempPath)) {
+
+				std::cerr << "The path specified in 'config.ini' is not a valid directory.\n";
+				std::cout << "Do you want to specify a different directory? (y/N): ";
+
+				std::string response;
+				std::getline(std::cin, response);
+
+				if (response == "Y" || response == "y") {
+
+					std::cout << "Please enter the full path to your audio library directory: ";
+					std::getline(std::cin, tempPath);
+
+					while (!fs::exists(tempPath) || !fs::is_directory(tempPath)) {
+						std::cout << "The provided path is not a valid directory. Please enter a valid path: ";
+						std::getline(std::cin, tempPath);
+					}
+
+					// Update config file.
+					if (fopen_s(&configFile, configPath.string().c_str(), "w") != 0) {
+						std::cerr << "Error: Could not open file 'config.ini' for writing.\n";
+						return -1;
+					}
+
+					fprintf(configFile, "PATH=%s\n", tempPath.c_str());
+					fclose(configFile);
+				}
+				else {
+					std::cout << "\nExiting auminal. Please fix the 'config.ini' file.\n";
+					std::cout << "Your config is located at: " << configPath << "\n";
+					return -1;
+				}
+			}
+
 			path = tempPath;
 		}
 	}
+
+	// If --directory was supplied, path is already set.
+	// The config file is completely ignored.
 
 	// Load library
 	for (const fs::directory_entry& entry : fs::directory_iterator(path)) {
@@ -471,7 +504,7 @@ int main(int argc, char *argv[]) {
 	Component menuList = Menu(&filteredTitles, &selected);
 
 	InputOption queryOpts;
-	Component search = Input(&query, "Search", queryOpts);
+	Component search = Input(&query, " Search", queryOpts);
 
 	Component menu = Container::Vertical({search, menuList});
 
