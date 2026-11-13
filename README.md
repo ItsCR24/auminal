@@ -19,9 +19,9 @@ __🎶 Terminal audio player with responsive UI__
 ```bash
 Usage: auminal [option]
 Options:
-        --directory, -d <path>  Specify the audio library path
-        --help, -h              Show this help message
-		--version, -v           Show version number
+    --directory, -d <path>  Specify the audio library path
+    --help, -h              Show this help message
+    --version, -v           Show version number
 ```
 
 ## Supported Formats
