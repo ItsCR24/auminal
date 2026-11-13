@@ -16,7 +16,7 @@ __🎶 Terminal audio player with responsive UI__
 
 
 ## Usage
-```bash
+```text
 Usage: auminal [option]
 Options:
     --directory, -d <path>  Specify the audio library path
