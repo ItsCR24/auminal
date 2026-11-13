@@ -1,4 +1,4 @@
-[![auminal typing logo](https://readme-typing-svg.demolab.com?font=Google+Sans+Code&size=60&duration=2500&pause=5000&color=73D99D&center=false&vCenter=true&random=true&width=360&height=80&lines=%3E+auminal_;%3E%E2%99%AB)](https://git.io/typing-svg)
+[![auminal typing logo](https://readme-typing-svg.demolab.com?font=Google+Sans+Code&size=60&duration=2500&pause=4000&color=73D99D&center=false&vCenter=true&random=true&width=360&height=80&lines=%3E+auminal_;%3E%E2%99%AB)](https://git.io/typing-svg)
 
 __🎶 Terminal audio player with responsive UI__
 
