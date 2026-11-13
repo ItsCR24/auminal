@@ -11,6 +11,10 @@ __🎶 Terminal audio player with responsive UI__
 - Resizable split view for library browsing and audio file preview/information
 - Preferences get saved in a config file
 
+## Preview
+![Preview](https://github.com/user-attachments/assets/7d0a70e2-20bf-40a9-9bda-4e9d51fe236c)
+
+
 ## Usage
 ```bash
 Usage: auminal [option]
