@@ -1,6 +1,6 @@
-// auminal - Terminal audio player with responsive ui
+// auminal_ - Terminal audio player with responsive ui
 
-#define VERSION "1.2.0"
+#define VERSION "1.2.1"
 
 #include <SFML/System/Time.hpp>
 #include <ftxui/component/component.hpp>
@@ -264,14 +264,14 @@ int main(int argc, char *argv[]) {
 			}
 		}
 		else if (std::string(argv[1]) == "--version" || std::string(argv[1]) == "-v") {
-			std::cout << "auminal " << VERSION << "\n";
+			std::cout << "auminal_ " << VERSION << "\n";
 			std::cout << "\nSupport the project by starring the repository on GitHub! :)\n";
 			std::cout << "https://github.com/ItsCR24/auminal\n";
 			return 1;
 		}
 		else
 		if (std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h") {
-			std::cout << "auminal - Terminal audio player with responsive ui\n\n";
+			std::cout << "auminal_ - Terminal audio player with responsive ui\n\n";
 			std::cout << "Usage: auminal [option]\n";
 			std::cout << "Options:\n";
 			std::cout << "\t--directory, -d <path> \tSpecify the audio library path\n";
@@ -427,7 +427,7 @@ int main(int argc, char *argv[]) {
 			fileCount++;
 		}
 		auto loadingOutput = vbox({
-			text("  auminal") | color(Color::Green),
+			text("  auminal_") | color(Color::Green),
 			hbox({
 				text("  Loading library "),
 				spinner(15, spinner_index++)
